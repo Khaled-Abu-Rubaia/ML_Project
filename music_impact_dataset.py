@@ -1,9 +1,11 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import LabelEncoder
+import numpy as np
 from sklearn.metrics import mean_absolute_error
+import matplotlib.pyplot as plt
 import os
+from sklearn.svm import SVR
+from sklearn.model_selection import LeaveOneOut
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from google.colab import drive
 drive.mount('/content/drive/')
@@ -15,59 +17,51 @@ print(os.listdir(GOOGLE_DRIVE_PATH))
 
 data = pd.read_csv(os.path.join(GOOGLE_DRIVE_PATH,'mxmh_survey_results.csv'))
 
-features = ['Age','Primary streaming service','Hours per day','While working','Instrumentalist','Composer','Fav genre','Exploratory','Foreign languages'
-,'BPM','Frequency [Classical]','Frequency [Country]','Frequency [EDM]','Frequency [Folk]','Frequency [Gospel]','Frequency [Hip hop]','Frequency [Jazz]',
-'Frequency [K pop]','Frequency [Latin]','Frequency [Lofi]','Frequency [Metal]','Frequency [Pop]','Frequency [R&B]','Frequency [Rap]','Frequency [Rock]',
-'Frequency [Video game music]','OCD']
-data.drop('Timestamp', axis=1)
-data.drop('Music effects', axis=1)
+features = ['Age', 'Primary streaming service', 'Hours per day', 'While working', 'Instrumentalist', 'Composer', 'Fav genre', 'Exploratory', 'Foreign languages', 'BPM', 'Frequency [Classical]', 'Frequency [Country]', 'Frequency [EDM]', 'Frequency [Folk]', 'Frequency [Gospel]', 'Frequency [Hip hop]', 'Frequency [Jazz]', 'Frequency [K pop]', 'Frequency [Latin]', 'Frequency [Lofi]', 'Frequency [Metal]', 'Frequency [Pop]', 'Frequency [R&B]', 'Frequency [Rap]', 'Frequency [Rock]', 'Frequency [Video game music]', 'OCD']
+data.drop(['Timestamp', 'Music effects'], axis=1, inplace=True)
 data.dropna(inplace=True)
-features_y = ['Anxiety','Depression','Insomnia']
+
+# Encode categorical variables
 label_encoder = LabelEncoder()
-data['Primary streaming service'] = label_encoder.fit_transform(data['Primary streaming service'])
-data['While working'] = label_encoder.fit_transform(data['While working'])
-data['Instrumentalist'] = label_encoder.fit_transform(data['Instrumentalist'])
-data['Composer'] = label_encoder.fit_transform(data['Composer'])
-data['Fav genre'] = label_encoder.fit_transform(data['Fav genre'])
-data['Exploratory'] = label_encoder.fit_transform(data['Exploratory'])
-data['Foreign languages'] = label_encoder.fit_transform(data['Foreign languages'])
-data['Frequency [Classical]'] = label_encoder.fit_transform(data['Frequency [Classical]'])
-data['Frequency [Country]'] = label_encoder.fit_transform(data['Frequency [Country]'])
-data['Frequency [EDM]'] = label_encoder.fit_transform(data['Frequency [EDM]'])
-data['Frequency [Folk]'] = label_encoder.fit_transform(data['Frequency [Folk]'])
-data['Frequency [Gospel]'] = label_encoder.fit_transform(data['Frequency [Gospel]'])
-data['Frequency [Hip hop]'] = label_encoder.fit_transform(data['Frequency [Hip hop]'])
-data['Frequency [Jazz]'] = label_encoder.fit_transform(data['Frequency [Jazz]'])
-data['Frequency [K pop]'] = label_encoder.fit_transform(data['Frequency [K pop]'])
-data['Frequency [Latin]'] = label_encoder.fit_transform(data['Frequency [Latin]'])
-data['Frequency [Lofi]'] = label_encoder.fit_transform(data['Frequency [Lofi]'])
-data['Frequency [Metal]'] = label_encoder.fit_transform(data['Frequency [Metal]'])
-data['Frequency [Pop]'] = label_encoder.fit_transform(data['Frequency [Pop]'])
-data['Frequency [R&B]'] = label_encoder.fit_transform(data['Frequency [R&B]'])
-data['Frequency [Rap]'] = label_encoder.fit_transform(data['Frequency [Rap]'])
-data['Frequency [Rock]'] = label_encoder.fit_transform(data['Frequency [Rock]'])
-data['Frequency [Video game music]'] = label_encoder.fit_transform(data['Frequency [Video game music]'])
+categorical_features = ['Primary streaming service', 'While working', 'Instrumentalist', 'Composer', 'Fav genre', 'Exploratory', 'Foreign languages', 'Frequency [Classical]', 'Frequency [Country]', 'Frequency [EDM]', 'Frequency [Folk]', 'Frequency [Gospel]', 'Frequency [Hip hop]', 'Frequency [Jazz]', 'Frequency [K pop]', 'Frequency [Latin]', 'Frequency [Lofi]', 'Frequency [Metal]', 'Frequency [Pop]', 'Frequency [R&B]', 'Frequency [Rap]', 'Frequency [Rock]', 'Frequency [Video game music]']
+for feature in categorical_features:
+    data[feature] = label_encoder.fit_transform(data[feature])
+
+# Define the target and features
+features_y = ['Anxiety', 'Depression', 'Insomnia']
 y = data[features_y]
 X = data[features]
+# Scale the features
+scaler = StandardScaler()
+X = pd.DataFrame(scaler.fit_transform(X), columns=features)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Initialize LOOCV
+loo = LeaveOneOut()
+mae_anxiety_lr, mae_depression_lr, mae_insomnia_lr = [], [], []
 
-model = LinearRegression()
-model.fit(X_train, y_train)
+# Initialize LOOCV
+loo = LeaveOneOut()
+mae_anxiety_svr, mae_depression_svr, mae_insomnia_svr = [], [], []
 
-y_pred = model.predict(X_test)
+# Define the SVR models with default parameters
+svr_anxiety = SVR(kernel='rbf', C=1.0, gamma='scale')
+svr_depression = SVR(kernel='rbf', C=1.0, gamma='scale')
+svr_insomnia = SVR(kernel='rbf', C=1.0, gamma='scale')
 
+# Calculate average MAE for SVR
+avg_mae_anxiety_svr = np.mean(mae_anxiety_svr)
+avg_mae_depression_svr = np.mean(mae_depression_svr)
+avg_mae_insomnia_svr = np.mean(mae_insomnia_svr)
 
-y_pred_df = pd.DataFrame(y_pred, columns=['Anxiety', 'Depression', 'Insomnia'])
-mae_anxiety = mean_absolute_error(y_test['Anxiety'], y_pred_df['Anxiety'])
-mae_depression = mean_absolute_error(y_test['Depression'], y_pred_df['Depression'])
-mae_insomnia = mean_absolute_error(y_test['Insomnia'], y_pred_df['Insomnia'])
-accuracy_Anxiety = 100 * (1 - (mae_anxiety / y_test['Anxiety'].mean()))
-accuracy_Depression = 100 * (1 - (mae_depression / y_test['Depression'].mean()))
-accuracy_Insomnia = 100 * (1 - (mae_insomnia / y_test['Insomnia'].mean()))
-print(f"Mean Squared Error_Anxiety: {mae_anxiety}")
-print(f'Accuracy: {accuracy_Anxiety:.2f}%')
-print(f"Mean Squared Error_Depression: {mae_depression}")
-print(f'Accuracy: {accuracy_Depression:.2f}%')
-print(f"Mean Squared Error_Insomnia: {mae_insomnia}")
-print(f'Accuracy: {accuracy_Insomnia:.2f}%')
+# Calculate accuracy
+accuracy_anxiety_svr = 100 * (1 - (avg_mae_anxiety_svr / y['Anxiety'].mean()))
+accuracy_depression_svr = 100 * (1 - (avg_mae_depression_svr / y['Depression'].mean()))
+accuracy_insomnia_svr = 100 * (1 - (avg_mae_insomnia_svr / y['Insomnia'].mean()))
+
+# Print results
+print(f"Mean Absolute Error - Anxiety: {avg_mae_anxiety_svr}")
+print(f'Accuracy - Anxiety: {accuracy_anxiety_svr:.2f}%')
+print(f"Mean Absolute Error - Depression: {avg_mae_depression_svr}")
+print(f'Accuracy - Depression: {accuracy_depression_svr:.2f}%')
+print(f"Mean Absolute Error - Insomnia: {avg_mae_insomnia_svr}")
+print(f'Accuracy - Insomnia: {accuracy_insomnia_svr:.2f}%')
