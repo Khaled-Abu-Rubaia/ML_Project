@@ -39,10 +39,6 @@ X = pd.DataFrame(scaler.fit_transform(X), columns=features)
 loo = LeaveOneOut()
 mae_anxiety_lr, mae_depression_lr, mae_insomnia_lr = [], [], []
 
-# Initialize LOOCV
-loo = LeaveOneOut()
-mae_anxiety_svr, mae_depression_svr, mae_insomnia_svr = [], [], []
-
 # Define the SVR models with default parameters
 svr_anxiety = SVR(kernel='rbf', C=1.0, gamma='scale')
 svr_depression = SVR(kernel='rbf', C=1.0, gamma='scale')
