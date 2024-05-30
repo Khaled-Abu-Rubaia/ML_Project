@@ -43,6 +43,26 @@ svr_anxiety = SVR(kernel='rbf', C=1.0, gamma='scale')
 svr_depression = SVR(kernel='rbf', C=1.0, gamma='scale')
 svr_insomnia = SVR(kernel='rbf', C=1.0, gamma='scale')
 
+for train_index, test_index in loo.split(X):
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train_anxiety, y_test_anxiety = y['Anxiety'].iloc[train_index], y['Anxiety'].iloc[test_index]
+    y_train_depression, y_test_depression = y['Depression'].iloc[train_index], y['Depression'].iloc[test_index]
+    y_train_insomnia, y_test_insomnia = y['Insomnia'].iloc[train_index], y['Insomnia'].iloc[test_index]
+
+    # Train and predict for Anxiety
+    svr_anxiety.fit(X_train, y_train_anxiety)
+    y_pred_anxiety = svr_anxiety.predict(X_test)
+    mae_anxiety_svr.append(mean_absolute_error(y_test_anxiety, y_pred_anxiety))
+
+    # Train and predict for Depression
+    svr_depression.fit(X_train, y_train_depression)
+    y_pred_depression = svr_depression.predict(X_test)
+    mae_depression_svr.append(mean_absolute_error(y_test_depression, y_pred_depression))
+
+    # Train and predict for Insomnia
+    svr_insomnia.fit(X_train, y_train_insomnia)
+    y_pred_insomnia = svr_insomnia.predict(X_test)
+    mae_insomnia_svr.append(mean_absolute_error(y_test_insomnia, y_pred_insomnia))
 # Calculate average MAE for SVR
 avg_mae_anxiety_svr = np.mean(mae_anxiety_svr)
 avg_mae_depression_svr = np.mean(mae_depression_svr)
